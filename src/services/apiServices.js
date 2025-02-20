@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://oasisbackend-production.up.railway.app/api/AccountsPayable"; // Adjust based on your .NET backend URL
-const API_BASE_URLS = "http://oasisbackend-production.up.railway.app/api"; // Adjust based on your .NET backend URL
+const API_BASE_URL = "https://oasisbackend-production.up.railway.app/api/AccountsPayable"; // Adjust based on your .NET backend URL
+const API_BASE_URLS = "https://oasisbackend-production.up.railway.app/api"; // Adjust based on your .NET backend URL
 
 export const apiServices = {
   // Fetch all accounts payable records
