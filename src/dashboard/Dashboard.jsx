@@ -38,16 +38,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useState, useEffect } from "react";
+import {
+  apiServices,
+  apiServices1,
+  apiServices2,
+} from "@/services/apiServices.js";
 
 function Dashboard() {
-  const data = [
-    { month: "Jan", payables: 15000, receivables: 10000 },
-    { month: "Feb", payables: 10000, receivables: 20000 },
-    { month: "Mar", payables: 9000, receivables: 13000 },
-    { month: "Apr", payables: 13000, receivables: 1000 },
-    { month: "May", payables: 14000, receivables: 17000 },
-    { month: "Jun", payables: 16000, receivables: 18000 },
-  ];
   const recentPayments = [
     {
       id: 1,
@@ -90,6 +88,99 @@ function Dashboard() {
     name: payment.date,
     amount: payment.amount,
   }));
+
+  const [totalReceivable, setTotalReceivable] = useState();
+  const [totalPayable, setTotalPayable] = useState();
+  const [chartData, setChartData] = useState([]);
+  const [totalInvoice, setTotalInvoice] = useState([]);
+  const [daysAmount, setDaysAmount] = useState([]);
+  const [payments, setPayments] = useState([]);
+
+  const fetchData = async () => {
+    try {
+      const data = (await apiServices.getAllPayables()) || [];
+      const totalPayableAmount =
+        data.length > 0 ? data.reduce((sum, item) => sum + item.amount, 0) : 0;
+
+      const data2 = (await apiServices1.getAllReceivables()) || [];
+      const totalReceivableAmount =
+        data2.length > 0
+          ? data2.reduce((sum, item) => sum + item.amount, 0)
+          : 0;
+
+      const payables = (await apiServices.getAllPayables()) || [];
+      const receivables = (await apiServices1.getAllReceivables()) || [];
+      // Group data by month
+      const monthlyData = {};
+
+      // Function to process data
+      const processData = (items, key) => {
+        items.forEach((item) => {
+          const date = new Date(item.date);
+          const month = date.toLocaleString("default", { month: "short" }); // Get short month name (e.g., "Jan")
+          const year = date.getFullYear();
+          const monthKey = `${month} ${year}`; // Example: "Jan 2025"
+
+          if (!monthlyData[monthKey]) {
+            monthlyData[monthKey] = {
+              month: monthKey,
+              payables: 0,
+              receivables: 0,
+            };
+          }
+
+          monthlyData[monthKey][key] += item.amount; // Accumulate the amounts
+        });
+      };
+
+      processData(payables, "payables");
+      processData(receivables, "receivables");
+
+      // Convert object to array and sort by date
+      const formattedData = Object.values(monthlyData).sort(
+        (a, b) => new Date(a.month) - new Date(b.month)
+      );
+
+      setChartData(formattedData);
+      setTotalReceivable(totalReceivableAmount);
+      setTotalPayable(totalPayableAmount);
+
+      const data3 = (await apiServices2.getAllPayments()) || [];
+
+      // Set total invoices
+      setTotalInvoice(data3.length);
+
+      // Get the latest five payments
+      const latestPayments = [...data3]
+        .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate))
+        .slice(0, 5);
+
+      setPayments(latestPayments);
+
+      // Process last five days' payment amounts
+      const today = new Date();
+      const lastFiveDays = Array.from({ length: 5 }, (_, i) => {
+        const date = new Date();
+        date.setDate(today.getDate() - i);
+        return date.toISOString().split("T")[0]; // YYYY-MM-DD format
+      });
+
+      const daysAmountData = lastFiveDays.map((date) => ({
+        name: date, // X-axis label
+        amount: data3
+          .filter((item) => item.paymentDate.startsWith(date)) // Check payment date
+          .reduce((sum, item) => sum + item.amount, 0), // Sum all amounts for that date
+      }));
+
+      setDaysAmount(daysAmountData);
+    } catch (error) {
+      console.error("Failed to fetch accounts payable:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -156,7 +247,14 @@ function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-500">₱21,500</div>
+              <div className="text-2xl font-bold text-red-500">
+                {totalPayable
+                  ? totalPayable.toLocaleString("en-US", {
+                      style: "currency",
+                      currency: "PHP",
+                    })
+                  : "Loading..."}
+              </div>
             </CardContent>
             <CardFooter>Total includes paid and unpaid amounts.</CardFooter>
           </Card>
@@ -167,7 +265,12 @@ function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-500">₱14,500</div>
+              <div className="text-2xl font-bold text-blue-500">
+                {(totalReceivable ?? 0).toLocaleString("en-US", {
+                  style: "currency",
+                  currency: "PHP",
+                })}
+              </div>
             </CardContent>
             <CardFooter>Total includes paid and unpaid amounts.</CardFooter>
           </Card>
@@ -179,7 +282,9 @@ function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-500">148</div>
+              <div className="text-2xl font-bold text-green-500">
+                {totalInvoice.toLocaleString()}
+              </div>
             </CardContent>
           </Card>
         </section>
@@ -191,7 +296,7 @@ function Dashboard() {
                 Monthly Financial Report
               </h2>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={data}>
+                <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
@@ -232,16 +337,33 @@ function Dashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {recentPayments.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell>{payment.name}</TableCell>
-                        <TableCell className="text-green-600 font-medium">
-                          ₱{payment.amount.toLocaleString()}
+                    {payments.length > 0 ? (
+                      payments.map((payment) => (
+                        <TableRow key={payment.id}>
+                          <TableCell>{payment.name}</TableCell>
+                          <TableCell className="text-green-600 font-medium">
+                            ₱{payment.amount.toLocaleString()}
+                          </TableCell>
+                          <TableCell>{payment.paymentMethod}</TableCell>
+                          <TableCell>
+                            {new Date(payment.paymentDate).toLocaleDateString(
+                              "en-PH",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              }
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan="4" className="text-center">
+                          No recent payments
                         </TableCell>
-                        <TableCell>{payment.method}</TableCell>
-                        <TableCell>{payment.date}</TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -250,7 +372,7 @@ function Dashboard() {
               <div className="mt-6">
                 <h3 className="text-sm text-gray-600 mb-2">Payment Trends</h3>
                 <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={paymentData}>
+                  <LineChart data={daysAmount}>
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip />
