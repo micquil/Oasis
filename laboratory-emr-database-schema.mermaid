@@ -1,0 +1,274 @@
+erDiagram
+    PATIENTS ||--o{ LAB_REQUESTS : "has"
+    PATIENTS {
+        int patient_id PK
+        string first_name
+        string last_name
+        date date_of_birth
+        string gender
+        string contact_number
+        string email
+        string address
+        string medical_record_number
+        datetime created_at
+        datetime updated_at
+    }
+    
+    LAB_REQUESTS ||--o{ SPECIMENS : "contains"
+    LAB_REQUESTS ||--o{ TEST_ORDERS : "includes"
+    LAB_REQUESTS {
+        int request_id PK
+        int patient_id FK
+        int requesting_physician_id FK
+        datetime request_date
+        string priority
+        string status
+        string clinical_notes
+        int created_by FK
+        datetime created_at
+        datetime updated_at
+    }
+    
+    SPECIMENS ||--o{ TEST_RESULTS : "yields"
+    SPECIMENS {
+        int specimen_id PK
+        int request_id FK
+        string specimen_type
+        string collection_method
+        datetime collection_time
+        int collected_by FK
+        string specimen_status
+        string rejection_reason
+        string lab_number
+        datetime received_time
+        int received_by FK
+        datetime created_at
+        datetime updated_at
+    }
+    
+    TEST_CATALOG ||--o{ TEST_ORDERS : "defines"
+    TEST_CATALOG {
+        int test_id PK
+        string test_code
+        string test_name
+        string department
+        string category
+        string description
+        decimal price
+        int turnaround_time_minutes
+        boolean active
+        datetime created_at
+        datetime updated_at
+    }
+    
+    TEST_ORDERS ||--o{ TEST_RESULTS : "produces"
+    TEST_ORDERS {
+        int order_id PK
+        int request_id FK
+        int test_id FK
+        string order_status
+        datetime ordered_at
+        int ordered_by FK
+        datetime created_at
+        datetime updated_at
+    }
+    
+    TEST_RESULTS {
+        int result_id PK
+        int order_id FK
+        int specimen_id FK
+        string result_value
+        string result_unit
+        string reference_range
+        string interpretation
+        string result_status
+        int performed_by FK
+        datetime performed_at
+        int verified_by FK
+        datetime verified_at
+        int approved_by FK
+        datetime approved_at
+        string notes
+        datetime created_at
+        datetime updated_at
+    }
+    
+    REFERENCE_RANGES {
+        int range_id PK
+        int test_id FK
+        string gender
+        int min_age
+        int max_age
+        string lower_limit
+        string upper_limit
+        string unit
+        string interpretation_guide
+        datetime created_at
+        datetime updated_at
+    }
+    
+    TEST_CATALOG ||--o{ REFERENCE_RANGES : "has"
+    
+    USERS ||--o{ LAB_REQUESTS : "creates"
+    USERS ||--o{ SPECIMENS : "collects"
+    USERS ||--o{ SPECIMENS : "receives"
+    USERS ||--o{ TEST_RESULTS : "performs"
+    USERS ||--o{ TEST_RESULTS : "verifies"
+    USERS ||--o{ TEST_RESULTS : "approves"
+    USERS {
+        int user_id PK
+        string username
+        string password_hash
+        string first_name
+        string last_name
+        string email
+        string role
+        string department
+        boolean active
+        datetime last_login
+        datetime created_at
+        datetime updated_at
+    }
+    
+    PHYSICIANS ||--o{ LAB_REQUESTS : "orders"
+    PHYSICIANS {
+        int physician_id PK
+        string first_name
+        string last_name
+        string specialty
+        string license_number
+        string contact_number
+        string email
+        string hospital_affiliation
+        datetime created_at
+        datetime updated_at
+    }
+    
+    AUDIT_LOGS {
+        int log_id PK
+        int user_id FK
+        string action
+        string table_affected
+        int record_id
+        string old_values
+        string new_values
+        datetime action_time
+        string ip_address
+    }
+    
+    REPORTS {
+        int report_id PK
+        int request_id FK
+        int patient_id FK
+        string report_type
+        string report_format
+        string report_status
+        datetime generated_at
+        int generated_by FK
+        string file_path
+        datetime created_at
+        datetime updated_at
+    }
+    
+    LAB_REQUESTS ||--o{ REPORTS : "generates"
+    USERS ||--o{ REPORTS : "generates"
+    PATIENTS ||--o{ REPORTS : "receives"
+    
+    HEMATOLOGY_RESULTS {
+        int hematology_id PK
+        int result_id FK
+        float wbc
+        float rbc
+        float hemoglobin
+        float hematocrit
+        float platelets
+        float neutrophils
+        float lymphocytes
+        float monocytes
+        float eosinophils
+        float basophils
+        string blood_type
+        string rh_factor
+        float bleeding_time
+        float clotting_time
+        float esr
+        float pt
+        float aptt
+        datetime created_at
+        datetime updated_at
+    }
+    
+    IMMUNOLOGY_RESULTS {
+        int immunology_id PK
+        int result_id FK
+        float tsh
+        float ft3
+        float ft4
+        string pregnancy_test
+        string rpr_syphilis
+        string hiv
+        string dengue_test
+        string dengue_ns1
+        string dengue_igg
+        string dengue_igm
+        datetime created_at
+        datetime updated_at
+    }
+    
+    MICROSCOPY_RESULTS {
+        int microscopy_id PK
+        int result_id FK
+        string specimen_color
+        string specimen_transparency
+        float specific_gravity
+        float ph
+        string protein
+        string glucose
+        int rbc_hpf
+        int wbc_hpf
+        string epithelial_cells
+        string bacteria
+        string casts
+        string crystals
+        string parasites
+        string consistency
+        string occult_blood
+        datetime created_at
+        datetime updated_at
+    }
+    
+    CHEMISTRY_RESULTS {
+        int chemistry_id PK
+        int result_id FK
+        float fbs
+        float rbs
+        float hpp
+        string ogtt_values
+        float total_cholesterol
+        float hdl
+        float ldl
+        float vldl
+        float triglycerides
+        float hba1c
+        float creatinine
+        float bun
+        float sgpt_alt
+        float sgot_ast
+        float bua
+        float alp
+        float total_protein
+        float albumin
+        float globulin
+        float sodium
+        float potassium
+        float chloride
+        float calcium
+        float psa
+        datetime created_at
+        datetime updated_at
+    }
+    
+    TEST_RESULTS ||--o{ HEMATOLOGY_RESULTS : "details"
+    TEST_RESULTS ||--o{ IMMUNOLOGY_RESULTS : "details"
+    TEST_RESULTS ||--o{ MICROSCOPY_RESULTS : "details"
+    TEST_RESULTS ||--o{ CHEMISTRY_RESULTS : "details"
